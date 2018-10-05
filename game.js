@@ -1,8 +1,11 @@
 Game.setup({
-    window: {
-        canvas: '#canvas',
+    canvas: {
+        id: 'canvas',
         width: 320,
-        height: 320
+        height: 320,
+        background: {
+            color: 'rgb(0, 0, 0)'
+        }
     },
 
     timers: {
@@ -23,14 +26,16 @@ Game.setup({
 
     types: {
         'hero': {
+            hitBox: {},
+            width: 32,
+            height: 32,
             damage: 5,
             health: 40,
             poisoned: false,
             count: 0,
             physics: true,
-            image: 'hero.png',
-            collider: {
-                type: 'box', 
+            image: {
+                src: "sprites/archer/Stand/0.png",
             },
 
             collisions: {
@@ -43,7 +48,7 @@ Game.setup({
 
                 if(attack.status === 'poison'){
                     this.poisoned = true;
-                    Game.timers.byName('hero').start();
+                    Game.timers.withName('hero').start();
                     console.log("The hero is poisoned. That sucks.");
                 }
             },
@@ -52,33 +57,28 @@ Game.setup({
                 this.velocity.x = 0;
                 this.velocity.y = 0;
 
-                if(Game.input.byName('walkLeft')){
-                    console.log('hero walking left');
+                if(Game.actions.withName('walkLeft')){
                     this.velocity.x = -1.0;
                 }
 
-                if(Game.input.byName('walkRight')){
-                    console.log('hero walking right');
+                if(Game.actions.withName('walkRight')){
                     this.velocity.x = 1.0;
                 }
 
-                if(Game.input.byName('walkUp')){
-                    console.log('hero walking up');
+                if(Game.actions.withName('walkUp')){
                     this.velocity.y = -1.0;
                 }
 
-                if(Game.input.byName('walkDown')){
-                    console.log('hero walking down');
+                if(Game.actions.withName('walkDown')){
                     this.velocity.y = 1.0;
                 }
 
-                if(Game.input.byName('attack')){
-                    console.log("hero is attacking.");
+                if(Game.actions.withName('attack')){
                 }
 
                 // if(this.count === 5.0){
                 //     this.poisoned = false;
-                //     Game.timers.byName('hero').reset();
+                //     Game.timers.withName('hero').reset();
                 // }
 
                 // if(this.poisoned === true && Game.timers('hero').ready()){
@@ -123,7 +123,7 @@ Game.setup({
             update(){
                 var direction;
                 var vector;
-                var hero = Game.sprites.byName('hero')
+                var hero = Game.sprites.withName('hero')
                 
                 if(Game.vectors.distance(this, hero) < 5.0 ){
                     this.attack(hero);
@@ -156,6 +156,12 @@ Game.setup({
             position: {
                 x: 240,
                 y: 240
+            }
+        },
+        {
+            hitBox:{
+                width:10,
+                height:320
             }
         }
     ]
