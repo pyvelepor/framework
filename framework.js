@@ -1,3 +1,29 @@
+function Body(configuration){
+    return {
+        velocity: Game.vectors.zero()
+    };
+}
+
+function CollisionListener(){
+    return function(sprite){};
+}
+
+function HitBox(configuration){
+    let hitBox = _.assign(
+        {}, 
+        {
+            x:0,
+            y:0,
+            width:configuration.width,
+            height:configuration.height, 
+            enabled:true
+        },
+            configuration.hitBox
+    );
+
+    return hitBox;
+}
+
 function Renderer(){
     var canvas;
     var context;
@@ -9,7 +35,6 @@ function Renderer(){
         canvas.height = configuration.height;
         context = canvas.getContext('2d');
         background = configuration.background;
-
         if(background.image !== undefined){
             let image = new Image();
             image.src = background.image;
@@ -18,16 +43,49 @@ function Renderer(){
     };
 
     this.draw = function(){
+        let debugFillStyle = "rgb(0, 255, 0)";
+
         if(background.color !== undefined){
             context.fillStyle = background.color;
             context.fillRect(0, 0, canvas.width, canvas.height);
         }
+
         else{
             context.drawImage(0, 0, background.image);
         }
 
         for(let sprite of Game.sprites.withImage()){
             context.drawImage(sprite.image, sprite.position.x, sprite.position.y, sprite.width, sprite.height);
+            if(Game.debug){
+                context.strokeStyle = debugFillStyle;
+                context.lineWidth = 2;
+
+                let x, y, w, h;
+
+                if(sprite.hitBox){
+                    x = sprite.position.x + sprite.hitBox.x;
+                    y = sprite.position.y + sprite.hitBox.y;
+                    w = sprite.hitBox.width;
+                    h = sprite.hitBox.height;
+                    context.strokeRect(x, y, w - 1.45, h - 1.45);
+                }
+
+                if(sprite.velocity !== undefined){
+                    let direction = Game.vectors.scale(10, sprite.velocity);
+                    
+                    w /= 2;
+                    h /= 2;
+                    x += w;
+                    y += h;
+
+                    context.strokeStyle = "rgb(255, 0, 0)";
+                    context.lineWidth = 2;
+                    context.beginPath();
+                    context.moveTo(x, y);
+                    context.lineTo(x + direction.x, y + direction.y);
+                    context.stroke();
+                }
+            }
         }
     };
 }
@@ -116,11 +174,15 @@ function Timer(duration){
     var startTime;
     
     this.start = function(){
-        this.startTime = Date.now();
+        startTime = Date.now();
     }
 
     this.ready = function(){
-        return (Date.now() - this.startTime) > duration;
+        return (Date.now() - startTime) > duration;
+    }
+
+    this.reset = function(){
+        startTime = undefined;
     }
 }
 
@@ -136,6 +198,20 @@ function Timers(){
     this.byName = function(name){
         return timers[name];
     };
+
+    this.check = function(){
+        for(name in timers){
+            if(!timers[name].ready()){
+                continue;
+            }
+
+            for(let sprite of Game.sprites.withTimerReady()){
+                sprite.timerReady(name);
+            }
+
+            timers[name].reset();
+        }
+    }
 }
 
 function Sprites(){
@@ -143,167 +219,267 @@ function Sprites(){
     var guids = new Set();
     var types = {};
     var sprites = [];
-    var attrs = {
-        image: new Set(),
-        inWorld: new Set(),
-        types: {},
-        names: {},
+    var _destroy = new Set();
+    var _create  = [];
+    var attributes = {
+        type: {},
         tags: {},
+        name: {},
+        layer: {}
+    };
+
+    var components = {
         hitBox: new Set(),
+        body: new Set(),
         physics: new Set(),
-        update: new Set()
+        image: new Set(),
+        update: new Set(),
     };
 
     var toSpriteIterable = function(guids){
         return {
             *[Symbol.iterator](){
                 for(let guid of guids){
-                    yield sprites[guid];
+                    let sprite = sprites[guid];
+
+                    if(sprite === undefined){
+                        continue;
+                    }
+
+                    yield sprite;
                 }
             }
         };
+    }
+
+    this.withAttribute = function(name){
+        let guids
+
+        if(name === "tags" || name === "layer" || name === "type"){
+            guids = Object.values(attributes[name]);
+            guids = new Set([].concat(...guids.map(set => Array.from(set))));
+        }
+
+        else if(name === "name"){
+            guids = Object.values(attributes[name]);
+        }
+
+        else{
+            guids = attributes[name];
+        }
+
+        return toSpriteIterable(guids);
     };
 
-    this.addTypes = function(types_){
-        let zeroVector = {x: 0, y: 0};
-        
+    this.withComponent = function(name){
+        return toSpriteIterable(components[name]);
+    };
+
+    this.getObjects = toSpriteIterable;
+
+    this.create = function(sprites_){
+        _create.push(...sprites_);
+    };
+
+    this.destroy = function(sprite){
+        _destroy.add(sprite.guid);
+    };
+
+    this.addTypes = function(types_){      
         for(let [name, type] of Object.entries(types_)){
             type = _.cloneDeep(type);
 
-            type = _.assign({}, {postion: {x: 0, y:0}}, type);
+            type = _.assign({}, {position: {x: 0, y:0}}, type);
+
+            if(type.layer === undefined){
+                type.layer = Game.physics.defaultLayer;
+            }
 
             types[name] = type;
         }
     };
 
-    this.addSprites = function(sprites_){
+
+   var addSprites = function(sprites_){
         for(let sprite of sprites_){
             sprite = _.cloneDeep(sprite);
             sprite.guid = guid;
 
             if(sprite.type !== undefined){
-                sprite = _.assign({}, types[sprite.type], sprite);
+                let type = _.cloneDeep(types[sprite.type]);
+                sprite = _.assign({}, type, sprite);
+            }
 
-                if(!(sprite.type in attrs.types)){
-                    attrs.types[sprite.type] = new Set();
-                }
+            if(sprite.layer === undefined){
+                sprite.layer = Game.physics.defaultLayer;
+            }
+
+            sprite.position = _.assign(Game.vectors.zero(), sprite.position);
+
+            for(let [property, value] of Object.entries(sprite)){
+                if(property === "type"){
+                    if(!(sprite.type in attributes.type)){
+                        attributes.type[sprite.type] = new Set();
+                    }
                     
-                attrs.types[sprite.type].add(guid);
-            }
-
-            sprite.position = _.assign({}, {x: 0, y:0}, sprite.position);
-
-
-            if(sprite.update !== undefined){
-                attrs.update.add(guid);
-            }
-
-            if(sprite.name !== undefined){
-                attrs.names[sprite.name] = guid;
-            }
-
-            if(sprite.physics !== undefined){
-                sprite.velocity =  {x: 0, y:0};
-                attrs.physics.add(guid);
-            }
-
-            if(sprite.image !== undefined){
-                let image = new Image(sprite.width, sprite.height);
+                    attributes.type[sprite.type].add(guid);
+                }
                 
-                image.src = sprite.image.src;
-                image.onload = function(){
-                    attrs.image.add(sprite.guid);
-                };
+                else if(property === "tags"){
+                    for(tag of sprite.tags){
+                        if(!(tag in attributes.tags)){
+                            attributes.tags[tag] = new Set();
+                        }
+    
+                        attributes.tags[tag].add(guid);
+                    }
+                }
 
-                sprite.image = image;
-            }
-
-            if(sprite.hitBox !== undefined){
-                attrs.hitBox.add(guid);
-                sprite.hitBox = _.assign({}, {x:0, y:0, width:sprite.width, height:sprite.height}, sprite.hitBox);
-            }
-
-            if(sprite.tags !== undefined){
-                for(tag of sprite.tags){
-                    if(!(tag in attrs.tags)){
-                        attrs.tags[tag] = new Set();
+                else if(property === "layer"){
+                    if(attributes.layer[sprite.layer] === undefined){
+                        attributes.layer[sprite.layer] = new Set();
                     }
 
-                    attrs.tags[tag].add(guid);
+                    attributes.layer[sprite.layer].add(guid);
+                }
+
+                else if(property === "name"){
+                    attributes.name[sprite.name] = guid;
+                }
+                
+                else if(property === "update"){
+                    components.update.add(guid);
+                }
+
+                else if(property === "physics"){
+                    sprite.body = Body();
+                    sprite.velocity =  sprite.body.velocity;
+                    components.body.add(guid);
+                    components.physics.add(guid);
+                }
+
+                else if(property === "image"){
+                    let image = new Image(sprite.width, sprite.height);
+                    
+                    image.src = sprite.image.src;
+                    image.onload = function(){
+                        components.image.add(sprite.guid);
+                    };
+
+                    sprite.image = image;
+                }
+
+                else if(property === "hitBox"){
+                    sprite.hitBox = HitBox(sprite);
+                    components.hitBox.add(guid);
+                    
+                    if(sprite.onCollision === undefined){
+                        sprite.onCollision = CollisionListener();
+                    }
+                }
+
+
+                else if(property === "timerReady"){
+                    components.timerReady.add(guid);
+                }
+
+                else if(typeof value !== "object"){
+                    if(attributes[property] === undefined){
+                        attributes[property] = new Set();
+                    }
+
+                    attributes[property].add(guid);
+                }
+
+                else{
+                    if(components[property] === undefined){
+                        components[property] = new Set();
+                    }
+
+                    components[property].add(guid)
                 }
             }
-
+                
             guids.add(guid);
             guid += 1;
             sprites.push(sprite);
         }
     }
 
-    this.withHitBox = function(){
-        return toSpriteIterable(attrs.hitBox);
-    }
-    this.withImage = function(){
-        return toSpriteIterable(attrs.image);
+    this.cleanup = function(){
+        for(let guid of _destroy){
+            sprites[guid] = undefined;
+        }
+
+        addSprites(_create);
+
+        _destroy.clear();
+        _create = [];
     };
 
-    this.withUpdate = function(){
-        return toSpriteIterable(attrs.update);
+    this.collidable = function(layer){
+        return {
+            *[Symbol.iterator](){
+                for(let guid of attributes.layer[layer]){
+                    if(sprites[guid] === undefined){
+                        continue;
+                    }
+
+                    if(!components.hitBox.has(guid)){
+                        continue;
+                    }                    
+
+                    let sprite = sprites[guid];
+
+                    if(!sprite.hitBox.enabled){
+                        continue;
+                    }
+
+                    yield sprite;
+                }
+            }
+        }
     };
 
     this.withPhysics = function(){
-        return toSpriteIterable(attrs.physics);
+        return this.withComponent("physics");
+    };
+
+    this.withTimerReady = function(){
+        return this.withComponent("timerReady");
+    };
+
+    
+    this.withHitBox = function(){
+        return this.withComponent("hitBox");
+    };
+    
+    this.withImage = function(){
+        return this.withComponent("image");
+    };
+    
+    this.withUpdate = function(){
+        return this.withComponent("update");
+    };
+    
+    this.withLayer = function(layer){
+        return toSpriteIterable(attributes.layer[layer]);
     };
 
     this.withName = function(name){
-        return sprites[attrs.names[name]];
+        return sprites[attributes[name]];
     };
 
     this.withType = function(type){
-        return toSpriteIterable(attrs.types[type]);
+        return toSpriteIterable(attributes.type[type]);
     };
 
     this.withTag = function(tag){
-        return toSpriteIterable(attrs.tags[tag]);
+        return toSpriteIterable(attributes.tags[tag]);
     };
 }
 
 function Physics(){
-    var resolveOne = function(a, b){
-        let a180 = a.velocity;
-        a180 = Game.vectors.normalize(a180);
-        a180 = Game.vectors.rotate(180, a180);
-
-        while(areColliding(a, b)){
-            a.position.x += a180.x;
-            a.position.y += a180.y;
-        }
-
-        a.velocity.x = 0;
-        a.velocity.y = 0;
-    };
-
-    var resolveTwo = function(a , b){
-        let a180 = a.velocity;
-        a180 = Game.vectors.normalize(a180);
-        a180 = Game.vectors.rotate(180, a180);
-
-        let b180 = b.velocity;
-        b180 = Game.vectors.normalize(b180);
-        b180 = Game.vectors.rotate(180, b180);
-
-        while(areColliding(a, b)){
-            a.position.x += a180.x;
-            a.position.y += a180.y;
-            b.position.x += b180.x;
-            b.position.y += b180.y;
-        }
-
-        a.velocity.x = 0;
-        a.velocity.y = 0;
-        b.velocity.x = 0;
-        b.velocity.y = 0;
-    };
-
     var areColliding = function(a, b){
         let ax = a.position.x + a.hitBox.x;
         let ay = a.position.y + a.hitBox.y;
@@ -321,41 +497,67 @@ function Physics(){
                (ay < (by + bh));
     };
 
-    this.update = function(){
-        for(let sprite of Game.sprites.withUpdate()){
-            sprite.update();
-        }
+    var collidableLayers = {};
+    this.defaultLayer;
 
-        for(let sprite of Game.sprites.withPhysics()){
-            sprite.position.x += sprite.velocity.x;
-            sprite.position.y += sprite.velocity.y;
-        }
-        
-        let sprites = [...Game.sprites.withHitBox()];
-
-        for(let i=0; i<sprites.length; i++){
-            let a = sprites[i];
-
-            if(a.velocity === undefined){
-                continue;
+    this.setup = function(configuration){
+        let defaultConfiguration = {
+            defaultLayer: "default",
+            collidableLayers: {
+                "default": ["default"]
             }
+        };
 
-            for(let j=i+1; j<sprites.length; j++){
-                let b = sprites[j];
+        configuration = _.assign({}, defaultConfiguration, configuration);
+        this.defaultLayer = configuration.defaultLayer;
+        collidableLayers = configuration.collidableLayers;
+    };
 
-                if(areColliding(a, b)){
-                    if(b.velocity === undefined){
-                        resolveOne(a, b);
+    this.update = function(){
+        for(let a of Game.sprites.withUpdate()){
+            a.update();
+        }
+
+        for(let a of Game.sprites.withPhysics()){
+  
+            a.position.x += a.velocity.x;
+            a.position.y += a.velocity.y;
+
+            for(let layer of collidableLayers[a.layer]){
+                for(let b of Game.sprites.collidable(layer)){
+                    if(a.guid === b.guid){
+                        continue;
+                    }
+                    
+                    if(!areColliding(a, b)){
+                        continue;
                     }
 
-                    else{
-                       resolveTwo(a, b)
+                    if(a.onCollision(b) || b.onCollision(a)){
+                        continue;
+                    }
+
+                    let aDisplacement = Game.vectors.normalize(a.velocity);
+                    aDisplacement = Game.vectors.scale(-1.0, aDisplacement)
+                
+                    let bDisplacement = {x: 0, y:0};
+
+                    if(b.velocity !== undefined){
+                        bDisplacement = Game.vectors.normalize(b.velocity);
+                        bDisplacement = Game.vectors.scale(-1.0, bDisplacement);
+                    }
+
+                    while(areColliding(a, b)){
+                        a.position.x += aDisplacement.x;
+                        a.position.y += aDisplacement.y;
+                        b.position.x += bDisplacement.x;
+                        b.position.y += bDisplacement.y;
                     }
                 }
             }
         }
     };
-};
+}
 
 function Vectors(){
     this.distance = function(u, v){
@@ -384,6 +586,24 @@ function Vectors(){
 
         return {x: x, y:y};
     };
+
+    this.scale = function(scalar, vector){
+        return {
+            x: scalar * vector.x,
+            y: scalar * vector.y
+        }
+    }
+
+    this.isZero = function(vector){
+        return Math.abs(vector.x) < 1e-3 && Math.abs(vector.y) < 1e-3;
+    }
+
+    this.zero = function(){
+        return {
+            x: 0,
+            y: 0
+        };
+    }
 }
 
 var Game = {
@@ -398,18 +618,27 @@ var Game = {
 Game.setup = function(configuration){
     Game.actions.add(configuration.input);
     Game.timers.add(configuration.timers);
-    Game.sprites.addTypes(configuration.types);
-    Game.sprites.addSprites(configuration.sprites);
+    Game.physics.setup(configuration.physics);
     Game.renderer.setup(configuration.canvas);
     Game.actions.setup();
+
+    if(configuration.types !== undefined){
+        Game.sprites.addTypes(configuration.types);
+    }
+
+    if(configuration.sprites !== undefined){
+        Game.sprites.create(configuration.sprites);
+    }
+
+    Game.sprites.cleanup();
 };
 
 Game.loop = function(){
     Game.actions.processInput();
     Game.physics.update();
     Game.renderer.draw();
-    // this.sprites.cleanup();
-    // Game.renderer.draw();
+    Game.timers.check();
+    Game.sprites.cleanup();
     window.requestAnimationFrame(Game.loop)
 };
 
