@@ -97,10 +97,19 @@ ball.start = function(){
 ball.onCollision = function(sprite){
     if(sprite.name === "left paddle"){
         this.velocity.x *= -1;
+
+        if(Game.vectors.magnitude(this.velocity) < 4){
+            this.velocity = Game.vectors.scale(1.25, this.velocity);
+        }
     }
 
     else if(sprite.name === "right paddle"){
         this.velocity.x *= -1;
+
+        if(Game.vectors.magnitude(this.velocity) < 4){
+            this.velocity = Game.vectors.scale(1.25, this.velocity);
+
+        }
     }
 
     else if(sprite.name === "top wall"){

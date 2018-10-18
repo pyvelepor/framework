@@ -578,6 +578,10 @@ function Physics(){
 }
 
 function Vectors(){
+    this.magnitude = function(u){
+        return Math.sqrt(u.x * u.x + u.y * u.y);
+    };
+    
     this.distance = function(u, v){
         let x = u.x - v.x;
         let y = u.y - v.y;
