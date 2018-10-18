@@ -47,7 +47,7 @@ rightPaddle.height = 128;
 rightPaddle.image = {};
 rightPaddle.image.src = "sprites/pong/paddle.png";
 rightPaddle.position = {};
-rightPaddle.position.x = 512;
+rightPaddle.position.x = 511;
 rightPaddle.position.y = 256;
 rightPaddle.hitBox = {};
 rightPaddle.hitBox.width = 64;
@@ -102,41 +102,75 @@ ball.onCollision = function(sprite){
     else if(sprite.name === "right paddle"){
         this.velocity.x *= -1;
     }
+
+    else if(sprite.name === "top wall"){
+        this.velocity.y *= -1;
+    }
+
+    else if(sprite.name === "bottom wall"){
+        this.velocity.y *= -1;
+    }
+
+    else{
+        this.position.x = 320;
+        this.position.y = 320;
+    }
 };
 
 //top wall
 var topWall = {};
 topWall.name = "top wall";
 topWall.position = {};
+topWall.position.x = 0;
+topWall.position.y = 0;
 topWall.hitBox = {};
+topWall.hitBox.width = 640;
+topWall.hitBox.height = 16;
 
 //bottom wall
 var bottomWall = {};
 bottomWall.name = "bottom wall";
 bottomWall.position = {};
-bottomWall.hitbox = {};
+bottomWall.hitBox = {};
+bottomWall.position.x = 0;
+bottomWall.position.y = 624;
+bottomWall.hitBox.width = 640;
+bottomWall.hitBox.height = 16;
 
 //left wall
 var leftWall = {};
 leftWall.name = "left wall";
 leftWall.position = {};
 leftWall.hitBox = {};
+leftWall.position.x = 0;
+leftWall.position.y = 0;
+leftWall.hitBox.width = 64;
+leftWall.hitBox.height = 640;
 
 //right wall
 var rightWall = {};
 rightWall.name = "right wall";
 rightWall.position = {};
 rightWall.hitBox = {};
+rightWall.position.x = 640 - 64;
+rightWall.position.y = 0;
+rightWall.hitBox.width = 64;
+rightWall.hitBox.height = 640;
 
 sprites = [];
 sprites.push(leftPaddle);
 sprites.push(rightPaddle);
 sprites.push(ball);
+sprites.push(topWall);
+sprites.push(bottomWall);
+sprites.push(leftWall);
+sprites.push(rightWall);
 
 myGame = {};
 myGame.canvas  = canvas;
 myGame.input = input;
 myGame.sprites = sprites;
 
+Game.debug = true;
 Game.setup(myGame);
 Game.start();
