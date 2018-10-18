@@ -1,8 +1,8 @@
 var canvas = {};
+canvas.background = {};
 canvas.id = "canvas";
 canvas.width = 640;
 canvas.height = 640;
-canvas.background = {};
 canvas.background.color = "rgb(0, 0, 0)";
 
 //actions to move paddles
@@ -68,15 +68,15 @@ rightPaddle.update = function(){
 
 //ball
 var ball = {};
+ball.image = {};
+ball.position = {};
+ball.hitBox = {};
 ball.name = "ball";
 ball.width = 16;
 ball.height = 16;
-ball.image = {};
 ball.image.src = "sprites/pong/ball.png";
-ball.position = {};
 ball.position.x = 320;
 ball.position.y = 320;
-ball.hitBox = {};
 ball.hitBox.width = 16;
 ball.hitBox.height = 16;
 ball.physics = true;
@@ -98,6 +98,7 @@ ball.onCollision = function(sprite){
     if(sprite.name === "left paddle"){
         this.velocity.x *= -1;
 
+        //Prevents ball from moving faster than ~4 pixels per frame
         if(Game.vectors.magnitude(this.velocity) < 4){
             this.velocity = Game.vectors.scale(1.25, this.velocity);
         }
@@ -106,6 +107,7 @@ ball.onCollision = function(sprite){
     else if(sprite.name === "right paddle"){
         this.velocity.x *= -1;
 
+        //Prevents ball from moving faster than ~4 pixels per frame
         if(Game.vectors.magnitude(this.velocity) < 4){
             this.velocity = Game.vectors.scale(1.25, this.velocity);
 
@@ -128,19 +130,19 @@ ball.onCollision = function(sprite){
 
 //top wall
 var topWall = {};
-topWall.name = "top wall";
 topWall.position = {};
+topWall.hitBox = {};
+topWall.name = "top wall";
 topWall.position.x = 0;
 topWall.position.y = 0;
-topWall.hitBox = {};
 topWall.hitBox.width = 640;
 topWall.hitBox.height = 16;
 
 //bottom wall
 var bottomWall = {};
-bottomWall.name = "bottom wall";
 bottomWall.position = {};
 bottomWall.hitBox = {};
+bottomWall.name = "bottom wall";
 bottomWall.position.x = 0;
 bottomWall.position.y = 624;
 bottomWall.hitBox.width = 640;
@@ -148,9 +150,9 @@ bottomWall.hitBox.height = 16;
 
 //left wall
 var leftWall = {};
-leftWall.name = "left wall";
 leftWall.position = {};
 leftWall.hitBox = {};
+leftWall.name = "left wall";
 leftWall.position.x = 0;
 leftWall.position.y = 0;
 leftWall.hitBox.width = 64;
@@ -158,9 +160,9 @@ leftWall.hitBox.height = 640;
 
 //right wall
 var rightWall = {};
-rightWall.name = "right wall";
 rightWall.position = {};
 rightWall.hitBox = {};
+rightWall.name = "right wall";
 rightWall.position.x = 640 - 64;
 rightWall.position.y = 0;
 rightWall.hitBox.width = 64;
