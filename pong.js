@@ -23,6 +23,8 @@ leftPaddle.position = {};
 leftPaddle.position.x = 64;
 leftPaddle.position.y = 256;
 leftPaddle.hitBox = {};
+leftPaddle.hitBox.width = 64;
+leftPaddle.hitBox.height = 128;
 leftPaddle.physics = true;
 leftPaddle.update = function(){
     this.velocity.x = 0;
@@ -48,6 +50,8 @@ rightPaddle.position = {};
 rightPaddle.position.x = 512;
 rightPaddle.position.y = 256;
 rightPaddle.hitBox = {};
+rightPaddle.hitBox.width = 64;
+rightPaddle.hitBox.height = 128;
 rightPaddle.physics = true;
 rightPaddle.update = function(){
     this.velocity.x = 0;
@@ -73,9 +77,31 @@ ball.position = {};
 ball.position.x = 320;
 ball.position.y = 320;
 ball.hitBox = {};
+ball.hitBox.width = 32;
+ball.hitBox.height = 32;
 ball.physics = true;
-ball.onCollision = function(sprite){
+ball.start = function(){
+    let number = Math.random();
 
+    if(number < 0.5){
+        this.velocity.x = -0.5;
+        this.velocity.y = -0.5;
+    }
+
+    else{
+        this.velocity.x = 0.5;
+        this.velocity.y = 0.5;
+    }
+}
+
+ball.onCollision = function(sprite){
+    if(sprite.name === "left paddle"){
+        this.velocity.x *= -1;
+    }
+
+    else if(sprite.name === "right paddle"){
+        this.velocity.x *= -1;
+    }
 };
 
 //top wall

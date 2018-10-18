@@ -16,7 +16,7 @@ function HitBox(configuration){
             y:0,
             width:configuration.width,
             height:configuration.height, 
-            enabled:true
+            enabled:true,
         },
             configuration.hitBox
     );
@@ -252,6 +252,12 @@ function Sprites(){
         };
     }
 
+    this.start = function(){
+        for (let sprite of sprites){
+            sprite.start();
+        }
+    };
+
     this.withAttribute = function(name){
         let guids
 
@@ -312,6 +318,10 @@ function Sprites(){
 
             if(sprite.layer === undefined){
                 sprite.layer = Game.physics.defaultLayer;
+            }
+
+            if(sprite.start === undefined){
+                sprite.start = function(){};
             }
 
             sprite.position = _.assign(Game.vectors.zero(), sprite.position);
@@ -376,6 +386,8 @@ function Sprites(){
                     if(sprite.onCollision === undefined){
                         sprite.onCollision = CollisionListener();
                     }
+
+                    sprite.afterCollision = sprite.onCollision;
                 }
 
 
@@ -523,6 +535,10 @@ function Physics(){
             a.position.x += a.velocity.x;
             a.position.y += a.velocity.y;
 
+            if(a.body.isSensor){
+                continue;
+            }
+
             for(let layer of collidableLayers[a.layer]){
                 for(let b of Game.sprites.collidable(layer)){
                     if(a.guid === b.guid){
@@ -533,18 +549,19 @@ function Physics(){
                         continue;
                     }
 
-                    if(a.onCollision(b) || b.onCollision(a)){
-                        continue;
-                    }
-
-                    let aDisplacement = Game.vectors.normalize(a.velocity);
-                    aDisplacement = Game.vectors.scale(-1.0, aDisplacement)
-                
+                    let aDisplacement = {x: 0, y:0};
                     let bDisplacement = {x: 0, y:0};
 
+                    if(!Game.vectors.isZero(a.velocity)){
+                        aDisplacement = Game.vectors.normalize(a.velocity);
+                        aDisplacement = Game.vectors.scale(-1.0, aDisplacement)
+                    }
+
                     if(b.velocity !== undefined){
-                        bDisplacement = Game.vectors.normalize(b.velocity);
-                        bDisplacement = Game.vectors.scale(-1.0, bDisplacement);
+                        if(!Game.vectors.isZero(b.velocity)){
+                            bDisplacement = Game.vectors.normalize(b.velocity);
+                            bDisplacement = Game.vectors.scale(-1.0, bDisplacement);
+                        }
                     }
 
                     while(areColliding(a, b)){
@@ -553,6 +570,9 @@ function Physics(){
                         b.position.x += bDisplacement.x;
                         b.position.y += bDisplacement.y;
                     }
+
+                    a.afterCollision(b);
+                    b.afterCollision(a);
                 }
             }
         }
@@ -631,6 +651,7 @@ Game.setup = function(configuration){
     }
 
     Game.sprites.cleanup();
+    Game.sprites.start();
 };
 
 Game.loop = function(){
