@@ -60,29 +60,31 @@ function Renderer(){
 
         if(Game.debug){
             for(let sprite of Game.sprites.withComponent("hitBox")){
+                context.strokeStyle = "rgb(0, 255, 0)";
+
                 let x, y, w, h;
                 x = sprite.position.x + sprite.hitBox.x;
                 y = sprite.position.y + sprite.hitBox.y;
                 w = sprite.hitBox.width;
                 h = sprite.hitBox.height;
                 context.strokeRect(x, y, w - 1.45, h - 1.45);
-            }
-
-            for(let sprite of Game.sprites.withComponent("physics")){
-                let x, y, w, h;
-                let direction = Game.vectors.scale(10, sprite.velocity);
-                        
-                w /= 2;
-                h /= 2;
-                x += w;
-                y += h;
 
                 context.strokeStyle = "rgb(255, 0, 0)";
-                context.lineWidth = 2;
-                context.beginPath();
-                context.moveTo(x, y);
-                context.lineTo(x + direction.x, y + direction.y);
-                context.stroke();
+               
+                if(sprite.physics){
+                    let direction = Game.vectors.scale(10, sprite.velocity);
+                            
+                    w /= 2;
+                    h /= 2;
+                    x += w;
+                    y += h;
+
+                    context.lineWidth = 2;
+                    context.beginPath();
+                    context.moveTo(x, y);
+                    context.lineTo(x + direction.x, y + direction.y);
+                    context.stroke();
+                }
             }
         }
     };
@@ -581,7 +583,7 @@ function Vectors(){
     this.magnitude = function(u){
         return Math.sqrt(u.x * u.x + u.y * u.y);
     };
-    
+
     this.distance = function(u, v){
         let x = u.x - v.x;
         let y = u.y - v.y;
