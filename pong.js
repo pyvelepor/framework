@@ -29,11 +29,11 @@ leftPaddle.update = function(){
     this.velocity.y = 0;
 
     if(Game.actions.withName("leftPaddleUp")){
-        this.velocity.y = -0.25;
+        this.velocity.y = -1.5;
     }
 
     else if(Game.actions.withName("leftPaddleDown")){
-        this.velocity.y = 0.25;
+        this.velocity.y = 1.5;
     }
 };
 
@@ -54,11 +54,11 @@ rightPaddle.update = function(){
     this.velocity.y = 0;
 
     if(Game.actions.withName("rightPaddleUp")){
-        this.velocity.y = -0.25;
+        this.velocity.y = -1.5;
     }
 
     else if(Game.actions.withName("rightPaddleDown")){
-        this.velocity.y = 0.25;
+        this.velocity.y = 1.5;
     }
 };
 
