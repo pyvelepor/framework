@@ -62,7 +62,7 @@ The obvious sprites are the visible ones: the left paddle, the right paddle, and
  6. left wall
  7. right wall
 
-### 3. sprites' static details ###
+### 3. sprites' initial values ###
 For Pong, here is a list of *all* the different attributes and components we'll use, and basic descriptions of each.
  - attributes
    - *name*: name of the sprite
@@ -102,11 +102,8 @@ With all of that figured out, we can now choose an initial position for both pad
 | attributes             | left padde               | right paddle              |
 |-----------------------:|-------------------------:|--------------------------:|
 | name                   |`left paddle`             | `right paddle`            |
-| width                  | 16                       |            16             |
+| width                  | 16                       | 16                        |
 | height                 | 96                       | 96                        |
-
-
-
 
 | components             | left paddle              | right paddle              |
 |-----------------------:|-------------------------:|--------------------------:|
@@ -121,7 +118,77 @@ With all of that figured out, we can now choose an initial position for both pad
 | `onCollision` function | `no`                     | `no`                      |
 
 #### ball ####
-The ball will be named `ball`. It will have a width of `32` and a height of `32`. Its initial position will be `(320, 320)` and the image will be `sprites/pong/ball.png`. It will have a hit box, with a width of `32` and a height of `32`. It will also have physics.
+The ball will be named `ball`. It will have a width of `16` and a height of `16`. Its initial position will be `(320, 320)` and the image will be `sprites/pong/ball.png`. It will have a hit box, with a width of `16` and a height of `16`. It will also have physics.
 
-What's unique to the ball is that it has `onCollision` and `start` functions. We'll use 
+What's unique to the ball is that it will have `onCollision` and `start` functions. `start` allows us to set the ball's initial velocity before the game begins. When the ball collides with anything, `onCollision` allows us to learn more about the other sprite in the collision and also allows us to react. Remember that we mentioned that the ball bounces off of walls and paddles? These are examples of how `onCollision` would be used. We look at attributes of the other sprite, and use them to determine how to change the ball's direction. We'll look at this more in the section on dynamic values for sprites.
+
+| attributes | ball  |
+|-----------:|------:|
+| name       |`ball` |
+| width      | 16    |
+| height     | 16    |
+
+| components             | ball                    |
+|-----------------------:|------------------------:|
+| x position             | 320                     |
+| y position             | 320                     |
+| image source (src)     | `sprites/pong/ball.png` |
+| physics                | `yes`                   |
+| hit box width          | 16                      |
+| hit box height         | 16                      |
+| `start` function       | `yes`                   |
+| `update` function      | `no`                    |
+| `onCollision` function | `yes`                   |
+
+#### walls ####
+The walls are really simple. They will only have a name, a position, a width, a height, and a hit box. Since the walls never move, we don't need physics. Since they're invisible, we don't need an image. And all of the game logic will be kept in the paddles and the ball, so walls don't need `start`, `update` or `onCollision` functions.
+
+|atttributes|bottom wall  |top wall  |left wall  |right wall  |
+|----------:|------------:|---------:|----------:|-----------:|
+|name       |`bottom wall`|`top wall`|`left wall`|`right wall`|
+|width      |640          |640       |64         |64          |
+|height     |16           |16        |640        |640         |
+
+
+|**components**          | **bottom wall**   | **top wall**  | **left wall**  | **right wall**  |
+|-----------------------:|------------------:|--------------:|---------------:|----------------:|
+|x position              |0                  |0              |0               |576              |
+|y position              |576                |0              |0               |0                |
+|image source (src)      | -           |-         |-          |-           |
+|physics                 |`false`      | `false`  |`false`    |`false`     |
+| hit box width          |640          |640       |64         |64          |
+| hit box height         |16           |16        |640        |640         |
+| `start` function       |`no`         |`no`      |`no`       |`no`        |
+| `update` function      |`no`         |`no`      |`no`       |`no`        |
+| `onCollision` function |`no`         |`no`      |`no`       |`no`        |
+
+### 4. sprites' dynamic values ###
+
+While a game is played, sprites can have values that change over time. These changes can be caused by keyboard input, or other events like sprites colliding. In our game, we have two major events that cause values to change:
+
+ 1. Keyboard input to move paddles
+ 2. Ball colliding with other sprites
+
+In all of our events, we update either the x or y velocity, or the position of one of the sprites. To walkthrough each event, we'll look at the sprite affectd, the event that causes a value to change, the sprite attribute that will be changed, and the actual value before and after the event. If the table has a `-` in the before column, it just means that value before the event doesn't matter. 
+
+|sprite affected|event                       | attribute         | before | after             |
+|--------------:|---------------------------:|------------------:|-------:|------------------:|
+|left paddle    |action leftPaddleUp         | `this.velocity.y` | 0      | -1.5              |
+|left paddle    |action leftPaddleDown       | `this.velocity.y` | 0      |  1.5              |
+|right paddle   |action rightPaddleUp        | `this.velocity.y` | 0      | -1.5              |
+|right paddle   |action rightPaddleDown      | `this.velocity.y` | 0      | 1.5               |
+|ball           |start of game               | `this.velocity.x` | -      | -0.5              |
+|ball           |start of game               | `this.velocity.y` | -      | -0.5              |
+|ball           |collided with left paddle   | `this.velocity.x` | -      | `-this.velocity.x`|
+|ball           |collided with right paddle  | `this.velocity.x` | -      | `-this.velocity.x`|
+|ball           |collided with top wall      | `this.velocity.y` | -      | `-this.velocity.y`|
+|ball           |collided with bottom wall   | `this.velocity.y` | -      | `-this.velocity.y`|
+|ball           |collided with left wall     | `this.position.x` | -      | 320               |
+|ball           |collided with left wall     | `this.position.y` | -      | 320               |
+|ball           |collided with left wall     | `this.velocity.x` | -      | -0.5              |
+|ball           |collided with left wall     | `this.velocity.y` | -      | -0.5              |
+
+
+
+
 
