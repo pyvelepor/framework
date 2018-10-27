@@ -1,5 +1,6 @@
 function Body(configuration){
     return {
+        impulse: Game.vectors.zero(),
         velocity: Game.vectors.zero()
     };
 }
@@ -18,7 +19,7 @@ function HitBox(configuration){
             height:configuration.height, 
             enabled:true,
         },
-            configuration.hitBox
+        configuration
     );
 
     return hitBox;
@@ -204,12 +205,13 @@ function Timers(){
             if(!timers[name].ready()){
                 continue;
             }
+            
+            timers[name].reset();
 
             for(let sprite of Game.sprites.withTimerReady()){
                 sprite.timerReady(name);
             }
 
-            timers[name].reset();
         }
     }
 }
@@ -234,6 +236,7 @@ function Sprites(){
         physics: new Set(),
         image: new Set(),
         update: new Set(),
+        timerReady: new Set()
     };
 
     var toSpriteIterable = function(guids){
@@ -287,7 +290,11 @@ function Sprites(){
         _create.push(...sprites_);
     };
 
-    this.destroy = function(sprite){
+    this.add = function(sprite){
+        this.create([sprite]);
+    };
+
+    this.remove = function(sprite){
         _destroy.add(sprite.guid);
     };
 
@@ -308,12 +315,12 @@ function Sprites(){
 
    var addSprites = function(sprites_){
         for(let sprite of sprites_){
-            sprite = _.cloneDeep(sprite);
+            // sprite = _.cloneDeep(sprite);
             sprite.guid = guid;
 
             if(sprite.type !== undefined){
                 let type = _.cloneDeep(types[sprite.type]);
-                sprite = _.assign({}, type, sprite);
+                sprite = _.assign(sprite, type, sprite);
             }
 
             if(sprite.layer === undefined){
@@ -324,7 +331,7 @@ function Sprites(){
                 sprite.start = function(){};
             }
 
-            sprite.position = _.assign(Game.vectors.zero(), sprite.position);
+            sprite.position = _.assign({}, Game.vectors.zero(), sprite.position);
 
             for(let [property, value] of Object.entries(sprite)){
                 if(property === "type"){
@@ -364,6 +371,7 @@ function Sprites(){
                 else if(property === "physics"){
                     sprite.body = Body();
                     sprite.velocity =  sprite.body.velocity;
+                    sprite.impulse = sprite.body.impulse;
                     components.body.add(guid);
                     components.physics.add(guid);
                 }
@@ -380,7 +388,7 @@ function Sprites(){
                 }
 
                 else if(property === "hitBox"){
-                    sprite.hitBox = HitBox(sprite);
+                    sprite.hitBox = HitBox(sprite.hitBox);
                     components.hitBox.add(guid);
                     
                     if(sprite.onCollision === undefined){
@@ -503,9 +511,9 @@ function Physics(){
         let bw = b.hitBox.width;
         let bh = b.hitBox.height;
 
-        return ((ax + aw) >= bx) &&
+        return ((ax + aw) > bx) &&
                (ax < (bx + bw))  &&
-               ((ay + ah) >= by) &&
+               ((ay + ah) > by) &&
                (ay < (by + bh));
     };
 
@@ -531,11 +539,16 @@ function Physics(){
         }
 
         for(let a of Game.sprites.withPhysics()){
-  
-            a.position.x += a.velocity.x;
-            a.position.y += a.velocity.y;
+            let aForce = Game.vectors.zero();
+            aForce.x = a.velocity.x + a.impulse.x;
+            aForce.y = a.velocity.y + a.impulse.y;
+            a.impulse.x = 0;
+            a.impulse.y = 0;
 
-            if(a.body.isSensor){
+            a.position.x += aForce.x;
+            a.position.y += aForce.y;
+
+            if(a.isSensor){
                 continue;
             }
 
@@ -549,11 +562,17 @@ function Physics(){
                         continue;
                     }
 
+                    if(b.isSensor){
+                        a.onCollision(b);
+                        b.onCollision(a);
+                        continue;
+                    }
+
                     let aDisplacement = {x: 0, y:0};
                     let bDisplacement = {x: 0, y:0};
 
-                    if(!Game.vectors.isZero(a.velocity)){
-                        aDisplacement = Game.vectors.normalize(a.velocity);
+                    if(!Game.vectors.isZero(aForce)){
+                        aDisplacement = Game.vectors.normalize(aForce);
                         aDisplacement = Game.vectors.scale(-1.0, aDisplacement)
                     }
 
@@ -571,8 +590,12 @@ function Physics(){
                         b.position.y += bDisplacement.y;
                     }
 
+                    a.impulse.x = 0;
+                    a.impulse.y = 0;
+
                     a.afterCollision(b);
                     b.afterCollision(a);
+
                 }
             }
         }
@@ -660,9 +683,9 @@ Game.setup = function(configuration){
 
 Game.loop = function(){
     Game.actions.processInput();
+    Game.timers.check();
     Game.physics.update();
     Game.renderer.draw();
-    Game.timers.check();
     Game.sprites.cleanup();
     window.requestAnimationFrame(Game.loop)
 };
