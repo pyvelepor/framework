@@ -1,30 +1,3 @@
-function Body(configuration){
-    return {
-        impulse: Game.vectors.zero(),
-        velocity: Game.vectors.zero()
-    };
-}
-
-function CollisionListener(){
-    return function(sprite){};
-}
-
-function HitBox(configuration){
-    let hitBox = _.assign(
-        {}, 
-        {
-            x:0,
-            y:0,
-            width:configuration.width,
-            height:configuration.height, 
-            enabled:true,
-        },
-        configuration
-    );
-
-    return hitBox;
-}
-
 function Renderer(){
     var canvas;
     var context;
@@ -173,13 +146,14 @@ function Actions(){
 
 function Timer(duration){
     var startTime;
-    
+    this.duration = duration;
+
     this.start = function(){
         startTime = Date.now();
     }
 
     this.ready = function(){
-        return (Date.now() - startTime) > duration;
+        return (Date.now() - startTime) > this.duration;
     }
 
     this.reset = function(){
@@ -369,7 +343,7 @@ function Sprites(){
                 }
 
                 else if(property === "physics"){
-                    sprite.body = Body();
+                    sprite.body = Game.physics.Body();
                     sprite.velocity =  sprite.body.velocity;
                     sprite.impulse = sprite.body.impulse;
                     components.body.add(guid);
@@ -388,11 +362,11 @@ function Sprites(){
                 }
 
                 else if(property === "hitBox"){
-                    sprite.hitBox = HitBox(sprite.hitBox);
+                    sprite.hitBox = Game.physics.HitBox(sprite.hitBox);
                     components.hitBox.add(guid);
                     
                     if(sprite.onCollision === undefined){
-                        sprite.onCollision = CollisionListener();
+                        sprite.onCollision = Game.physics.CollisionListener();
                     }
 
                     sprite.afterCollision = sprite.onCollision;
@@ -487,7 +461,7 @@ function Sprites(){
     };
 
     this.withName = function(name){
-        return sprites[attributes[name]];
+        return sprites[attributes.name[name]];
     };
 
     this.withType = function(type){
@@ -500,6 +474,33 @@ function Sprites(){
 }
 
 function Physics(){
+    this.Body = function(configuration){
+        return {
+            impulse: Game.vectors.zero(),
+            velocity: Game.vectors.zero()
+        };
+    };
+    
+    this.CollisionListener = function(){
+        return function(sprite){};
+    };
+    
+    this.HitBox = function(configuration){
+        let hitBox = _.assign(
+            {}, 
+            {
+                x:0,
+                y:0,
+                width:configuration.width,
+                height:configuration.height, 
+                enabled:true,
+            },
+            configuration
+        );
+    
+        return hitBox;
+    };
+
     var areColliding = function(a, b){
         let ax = a.position.x + a.hitBox.x;
         let ay = a.position.y + a.hitBox.y;
@@ -548,10 +549,6 @@ function Physics(){
             a.position.x += aForce.x;
             a.position.y += aForce.y;
 
-            if(a.isSensor){
-                continue;
-            }
-
             for(let layer of collidableLayers[a.layer]){
                 for(let b of Game.sprites.collidable(layer)){
                     if(a.guid === b.guid){
@@ -562,7 +559,7 @@ function Physics(){
                         continue;
                     }
 
-                    if(b.isSensor){
+                    if(a.isSensor || b.isSensor){
                         a.onCollision(b);
                         b.onCollision(a);
                         continue;
