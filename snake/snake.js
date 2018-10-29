@@ -12,14 +12,14 @@ var Food = function(){
     food.image = {}
     food.hitBox = {};
     food.tags = ['food'];
-    food.width = 16;
-    food.height = 16;
+    food.width = 1;
+    food.height = 1;
     food.isSensor = true;
     food.image.src = "../sprites/pong/ball.png";
     food.position.x = 0;
     food.position.y = 0;
-    food.hitBox.width = 16;
-    food.hitBox.height = 16;
+    food.hitBox.width = 1;
+    food.hitBox.height = 1;
 
     return food;
 };
@@ -31,93 +31,86 @@ var Body = function(){
     body.hitBox = {};
     body.oldPosition = {};
     body.tags = ["body"];
-    body.width = 16;
-    body.height = 16;
+    body.width = 1;
+    body.height = 1;
     body.isSensor = true;
     body.image.src = "../sprites/pong/ball.png";
-    body.hitBox.width = 16;
-    body.hitBox.height = 16;
+    body.hitBox.width = 1;
+    body.hitBox.height = 1;
 
     return body;
 };
 
 canvas.background = {};
-canvas.width = 320;
-canvas.height = 320;
+canvas.width = 160;
+canvas.height = 88;
 canvas.background.color = "rgb(0, 0, 0)";
 canvas.id = "canvas";
+canvas.scalingFactor =  8;
 
 input.up = "KeyW";
 input.left = "KeyA";
 input.down = "KeyS";
 input.right = "KeyD";
 
-timers.move = 200;
+timers.move = 400;
 
 topWall.position = {};
 topWall.hitBox = {};
-topWall.image = {};
 topWall.tags = ["wall"];
-topWall.width = 320;
-topWall.height = 16;
+topWall.width = canvas.width;
+topWall.height = 1;
 topWall.position.x = 0;
-topWall.position.y = 0;
-topWall.image.src = "../sprites/pong/paddle.png";
-topWall.hitBox.width = 320;
-topWall.hitBox.height = 16;
+topWall.position.y = -1;
+topWall.hitBox.width = canvas.width;
+topWall.hitBox.height = 1;
 
 bottomWall.position = {};
 bottomWall.hitBox = {};
-bottomWall.image = {};
 bottomWall.tags = ["wall"];
-bottomWall.width = 320;
-bottomWall.height = 16;
+bottomWall.width = canvas.width;
+bottomWall.height = 1;
 bottomWall.position.x = 0;
-bottomWall.position.y = 304;
-bottomWall.image.src = "../sprites/pong/paddle.png";
-bottomWall.hitBox.width = 320;
-bottomWall.hitBox.height = 16;
+bottomWall.position.y = canvas.height;
+bottomWall.hitBox.width = canvas.width;
+bottomWall.hitBox.height = 1;
 
 leftWall.position = {};
 leftWall.hitBox = {};
-leftWall.image = {};
 leftWall.tags = ["wall"];
-leftWall.width = 16;
-leftWall.height = 320;
-leftWall.position.x = 0;
+leftWall.width = 1;
+leftWall.height = canvas.height;
+leftWall.position.x = -1;
 leftWall.position.y = 0;
-leftWall.image.src = "../sprites/pong/paddle.png";
-leftWall.hitBox.width = 16;
-leftWall.hitBox.height = 320;
+leftWall.hitBox.width = 1;
+leftWall.hitBox.height = canvas.height;
 
 rightWall.position = {};
 rightWall.hitBox = {};
-rightWall.image = {};
 rightWall.tags = ["wall"];
-rightWall.width = 16;
-rightWall.height = 320;
-rightWall.position.x = 304;
+rightWall.width = 1;
+rightWall.height = canvas.height;
+rightWall.position.x = canvas.width;
 rightWall.position.y = 0;
-rightWall.image.src = "../sprites/pong/paddle.png";
-rightWall.hitBox.width = 16;
-rightWall.hitBox.height = 320;
+rightWall.hitBox.width = 1;
+rightWall.hitBox.height = canvas.height;
 
 snake = {};
 snake.direction = {};
 snake.nextDirection = {};
 snake.body = [Body()];
 snake.name = "snake";
-snake.direction.x = 16;
+snake.direction.x = 1;
 snake.direction.y = 0;
-snake.nextDirection.x = 16;
+snake.nextDirection.x = 1;
 snake.nextDirection.y = 0;
-snake.tail = snake.body[0];
-snake.head = snake.body[snake.body.length - 1];
+snake.tail = snake.body[snake.body.length - 1];
+snake.tail.oldPosition.x = canvas.width / 2;
+snake.tail.oldPosition.y = canvas.height / 2;
+snake.head = snake.body[0];
 snake.head.tags = ["head"];
-snake.head.position.x = 160;
-snake.head.position.y = 160;
-snake.head.oldPosition.x = 160;
-snake.head.oldPosition.y = 160;
+snake.head.position.x = canvas.width / 2;
+snake.head.position.y = canvas.height / 2;
 snake.head.physics = true;
 snake.head.onCollision = function(sprite){
     let snake = Game.sprites.withName("snake");
@@ -138,27 +131,28 @@ snake.head.onCollision = function(sprite){
         }
 
         
-        snake.direction.x = 16;
+        snake.direction.x = 1;
         snake.direction.y = 0;
-        snake.nextDirection.x = 16;
+        snake.nextDirection.x = 1;
         snake.nextDirection.y = 0;
-        snake.head.position.x = 160;
-        snake.head.position.y = 160;
+        snake.head.position.x = canvas.width / 2;
+        snake.head.position.y = canvas.height / 2;
     
         snake.body = [snake.head];
         snake.tail = snake.body[snake.body.length - 1];
+        snake.tail.oldPosition.x = canvas.width / 2;
+        snake.tail.oldPosition.y = canvas.hegith / 2;
 
-        food.position.x = 192;
-        food.position.y = 160;
+        food.position.x = canvas.width /2 + 1;
+        food.position.y = canvas.height / 2;
         
-
         Game.sprites.add(food);
 
-        timer.duration = 200;
+        timer.duration = 400;
         timer.start();
     }
 
-    if(sprite.tags.includes("food")){
+    else if(sprite.tags.includes("food")){
         body = Body();
         food = Food();
         
@@ -167,8 +161,8 @@ snake.head.onCollision = function(sprite){
         snake.body.push(body);
         snake.tail = snake.body[snake.body.length - 1];
         
-        food.position.x = _.random(1, 18) * 16;
-        food.position.y = _.random(1, 18) * 16;
+        food.position.x = _.random(1, canvas.width - 2);
+        food.position.y = _.random(1, canvas.height - 2);
         
         Game.sprites.add(body);
         Game.sprites.add(food);
@@ -185,8 +179,8 @@ snake.start = function(){
 
 snake.timerReady = function(name){
     if(name === "move"){
-        this.tail.oldPosition.x = this.position.x;
-        this.tail.oldPosition.y = this.position.y;
+        this.tail.oldPosition.x = this.tail.position.x;
+        this.tail.oldPosition.y = this.tail.position.y;
 
         for(let index=this.body.length-1; index>0; index--){
             let body = this.body[index];
@@ -207,29 +201,29 @@ snake.timerReady = function(name){
 snake.update = function(){
     if(Game.actions.withName("up") && this.direction.y === 0){
         this.nextDirection.x = 0;
-        this.nextDirection.y = -16;
+        this.nextDirection.y = -1;
     }
 
     else if(Game.actions.withName("down") && this.direction.y === 0){
         this.nextDirection.x = 0;
-        this.nextDirection.y = 16;
+        this.nextDirection.y = 1;
     }
 
     else if(Game.actions.withName("left") && this.direction.x === 0){
-        this.nextDirection.x = -16;
+        this.nextDirection.x = -1;
         this.nextDirection.y = 0;
     }
 
     else if(Game.actions.withName("right") && this.direction.x === 0){
-        this.nextDirection.x = 16;
+        this.nextDirection.x = 1;
         this.nextDirection.y = 0;
     }
 };
 
 
 var food = Food();
-food.position.x = 192;
-food.position.y = 160; 
+food.position.x = canvas.width / 2 + 1;
+food.position.y = canvas.height / 2; 
 
 var sprites = [snake, snake.head, topWall, bottomWall, leftWall, rightWall, food];
 var myGame = {};

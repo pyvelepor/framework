@@ -2,11 +2,18 @@ function Renderer(){
     var canvas;
     var context;
     var background;
-
+    var scalingFactor;
+    
     this.setup = function(configuration){
+        scalingFactor = configuration.scalingFactor;
+
+        if(scalingFactor === undefined){
+            scalingFactor = 1;
+        }
+        
         canvas = document.getElementById(configuration.id);
-        canvas.width = configuration.width;
-        canvas.height = configuration.height;
+        canvas.width = configuration.width * scalingFactor;
+        canvas.height = configuration.height * scalingFactor;
         context = canvas.getContext('2d');
         background = configuration.background;
         if(background.image !== undefined){
@@ -29,7 +36,12 @@ function Renderer(){
         }
 
         for(let sprite of Game.sprites.withImage()){
-            context.drawImage(sprite.image, sprite.position.x, sprite.position.y, sprite.width, sprite.height);
+            let x = sprite.position.x * scalingFactor;
+            let y = sprite.position.y * scalingFactor;
+            let width = sprite.width *  scalingFactor;
+            let height = sprite.height * scalingFactor;
+
+            context.drawImage(sprite.image, x, y, width, height);
         }
 
         if(Game.debug){
@@ -37,10 +49,10 @@ function Renderer(){
                 context.strokeStyle = "rgb(0, 255, 0)";
 
                 let x, y, w, h;
-                x = sprite.position.x + sprite.hitBox.x;
-                y = sprite.position.y + sprite.hitBox.y;
-                w = sprite.hitBox.width;
-                h = sprite.hitBox.height;
+                x = sprite.position.x * scalingFactor + sprite.hitBox.x * scalingFactor;
+                y = sprite.position.y * scalingFactor + sprite.hitBox.y * scalingFactor;
+                w = sprite.hitBox.width * scalingFactor;
+                h = sprite.hitBox.height * scalingFactor;
                 context.strokeRect(x, y, w - 1.45, h - 1.45);
 
                 context.strokeStyle = "rgb(255, 0, 0)";
@@ -682,8 +694,8 @@ Game.loop = function(){
     Game.actions.processInput();
     Game.timers.check();
     Game.physics.update();
-    Game.renderer.draw();
     Game.sprites.cleanup();
+    Game.renderer.draw();
     window.requestAnimationFrame(Game.loop)
 };
 
