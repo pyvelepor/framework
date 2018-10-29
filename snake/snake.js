@@ -15,8 +15,8 @@ var Food = function(){
     this.height = 1;
     this.isSensor = true;
     this.image.src = "../sprites/pong/ball.png";
-    this.position.x = canvas.width / 2 + 1;
-    this.position.y = canvas.height / 2;
+    this.position.x = Math.trunc(canvas.width / 2 + 1);
+    this.position.y = Math.trunc(canvas.height / 2);
     this.hitBox.width = 1;
     this.hitBox.height = 1;
 };
@@ -36,8 +36,8 @@ var Body = function(){
 };
 
 canvas.background = {};
-canvas.width = 40;
-canvas.height = 40;
+canvas.width = 25;
+canvas.height = 25;
 canvas.background.color = "rgb(0, 0, 0)";
 canvas.id = "canvas";
 canvas.scalingFactor =  16;
@@ -89,25 +89,21 @@ rightWall.position.y = 0;
 rightWall.hitBox.width = 1;
 rightWall.hitBox.height = canvas.height;
 
-snake = {};
+snake = new Body();
 snake.direction = {};
 snake.nextDirection = {};
-snake.body = [new Body()];
-snake.name = "snake";
+snake.bodies = [snake];
 snake.direction.x = 1;
 snake.direction.y = 0;
 snake.nextDirection.x = 1;
 snake.nextDirection.y = 0;
-snake.tail = snake.body[snake.body.length - 1];
-snake.tail.oldPosition.x = canvas.width / 2;
-snake.tail.oldPosition.y = canvas.height / 2;
-snake.head = snake.body[0];
-snake.head.tags = ["head"];
-snake.head.position.x = canvas.width / 2;
-snake.head.position.y = canvas.height / 2;
-snake.head.physics = true;
-snake.head.onCollision = function(sprite){
-    let snake = Game.sprites.withName("snake");
+snake.tail = snake.bodies[snake.bodies.length - 1];
+snake.tail.oldPosition.x = Math.trunc(canvas.width / 2);
+snake.tail.oldPosition.y = Math.trunc(canvas.height / 2);
+snake.position.x = Math.trunc(canvas.width / 2);
+snake.position.y = Math.trunc(canvas.height / 2);
+snake.physics = true;
+snake.onCollision = function(sprite){
     let timer = Game.timers.byName("move");
     let food;
     let body; 
@@ -115,8 +111,8 @@ snake.head.onCollision = function(sprite){
     if(sprite.tags.includes("wall") || sprite.tags.includes("body")){
         food = new Food();
 
-        for(let index=1; index<snake.body.length; index++){
-            body = snake.body[index];
+        for(let index=1; index<snake.bodies.length; index++){
+            body = this.bodies[index];
             Game.sprites.remove(body);
         }
 
@@ -124,18 +120,17 @@ snake.head.onCollision = function(sprite){
             Game.sprites.remove(food);
         }
 
-        
-        snake.direction.x = 1;
-        snake.direction.y = 0;
-        snake.nextDirection.x = 1;
-        snake.nextDirection.y = 0;
-        snake.head.position.x = canvas.width / 2;
-        snake.head.position.y = canvas.height / 2;
+        this.direction.x = 1;
+        this.direction.y = 0;
+        this.nextDirection.x = 1;
+        this.nextDirection.y = 0;
+        this.position.x = Math.trunc(canvas.width / 2);
+        this.position.y = Math.trunc(canvas.height / 2);
     
-        snake.body = [snake.head];
-        snake.tail = snake.body[snake.body.length - 1];
-        snake.tail.oldPosition.x = canvas.width / 2;
-        snake.tail.oldPosition.y = canvas.hegith / 2;
+        this.bodies = [this];
+        this.tail = this.bodies[this.bodies.length - 1];
+        this.tail.oldPosition.x = Math.trunc(canvas.width / 2);
+        this.tail.oldPosition.y = Math.trunc(canvas.height / 2);
         
         Game.sprites.add(food);
 
@@ -147,10 +142,10 @@ snake.head.onCollision = function(sprite){
         body = new Body();
         food = new Food();
         
-        body.position.x = snake.tail.oldPosition.x;
-        body.position.y = snake.tail.oldPosition.y;
-        snake.body.push(body);
-        snake.tail = snake.body[snake.body.length - 1];
+        body.position.x = this.tail.oldPosition.x;
+        body.position.y = this.tail.oldPosition.y;
+        this.bodies.push(body);
+        this.tail = this.bodies[this.bodies.length - 1];
         
         food.position.x = _.random(1, canvas.width - 2);
         food.position.y = _.random(1, canvas.height - 2);
@@ -173,17 +168,17 @@ snake.timerReady = function(name){
         this.tail.oldPosition.x = this.tail.position.x;
         this.tail.oldPosition.y = this.tail.position.y;
 
-        for(let index=this.body.length-1; index>0; index--){
-            let body = this.body[index];
-            let next = this.body[index - 1];
+        for(let index=this.bodies.length-1; index>0; index--){
+            let body = this.bodies[index];
+            let next = this.bodies[index - 1];
             body.position.x = next.position.x;
             body.position.y = next.position.y;
         }
 
         this.direction.x = this.nextDirection.x;
         this.direction.y = this.nextDirection.y;
-        this.head.position.x += this.direction.x;
-        this.head.position.y += this.direction.y;
+        this.position.x += this.direction.x;
+        this.position.y += this.direction.y;
 
         Game.timers.byName("move").start();
     }
@@ -215,7 +210,7 @@ snake.update = function(){
 var food = new Food();
 
 
-var sprites = [snake, snake.head, topWall, bottomWall, leftWall, rightWall, food];
+var sprites = [snake, topWall, bottomWall, leftWall, rightWall, food];
 var myGame = {};
 myGame.canvas = canvas;
 myGame.sprites = sprites;
