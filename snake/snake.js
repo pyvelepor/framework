@@ -7,46 +7,40 @@ var input = {};
 var timers = {};
 
 var Food = function(){
-    let food = {};
-    food.position = {}
-    food.image = {}
-    food.hitBox = {};
-    food.tags = ['food'];
-    food.width = 1;
-    food.height = 1;
-    food.isSensor = true;
-    food.image.src = "../sprites/pong/ball.png";
-    food.position.x = 0;
-    food.position.y = 0;
-    food.hitBox.width = 1;
-    food.hitBox.height = 1;
-
-    return food;
+    this.position = {};
+    this.image = {}
+    this.hitBox = {};
+    this.tags = ['food'];
+    this.width = 1;
+    this.height = 1;
+    this.isSensor = true;
+    this.image.src = "../sprites/pong/ball.png";
+    this.position.x = canvas.width / 2 + 1;
+    this.position.y = canvas.height / 2;
+    this.hitBox.width = 1;
+    this.hitBox.height = 1;
 };
 
 var Body = function(){
-    let body = {};
-    body.position = {};
-    body.image = {};
-    body.hitBox = {};
-    body.oldPosition = {};
-    body.tags = ["body"];
-    body.width = 1;
-    body.height = 1;
-    body.isSensor = true;
-    body.image.src = "../sprites/pong/ball.png";
-    body.hitBox.width = 1;
-    body.hitBox.height = 1;
-
-    return body;
+    this.position = {};
+    this.image = {};
+    this.hitBox = {};
+    this.oldPosition = {};
+    this.tags = ["body"];
+    this.width = 1;
+    this.height = 1;
+    this.isSensor = true;
+    this.image.src = "../sprites/pong/ball.png";
+    this.hitBox.width = 1;
+    this.hitBox.height = 1;
 };
 
 canvas.background = {};
-canvas.width = 160;
-canvas.height = 88;
+canvas.width = 40;
+canvas.height = 40;
 canvas.background.color = "rgb(0, 0, 0)";
 canvas.id = "canvas";
-canvas.scalingFactor =  8;
+canvas.scalingFactor =  16;
 
 input.up = "KeyW";
 input.left = "KeyA";
@@ -98,7 +92,7 @@ rightWall.hitBox.height = canvas.height;
 snake = {};
 snake.direction = {};
 snake.nextDirection = {};
-snake.body = [Body()];
+snake.body = [new Body()];
 snake.name = "snake";
 snake.direction.x = 1;
 snake.direction.y = 0;
@@ -119,7 +113,7 @@ snake.head.onCollision = function(sprite){
     let body; 
 
     if(sprite.tags.includes("wall") || sprite.tags.includes("body")){
-        food = Food();
+        food = new Food();
 
         for(let index=1; index<snake.body.length; index++){
             body = snake.body[index];
@@ -142,9 +136,6 @@ snake.head.onCollision = function(sprite){
         snake.tail = snake.body[snake.body.length - 1];
         snake.tail.oldPosition.x = canvas.width / 2;
         snake.tail.oldPosition.y = canvas.hegith / 2;
-
-        food.position.x = canvas.width /2 + 1;
-        food.position.y = canvas.height / 2;
         
         Game.sprites.add(food);
 
@@ -153,8 +144,8 @@ snake.head.onCollision = function(sprite){
     }
 
     else if(sprite.tags.includes("food")){
-        body = Body();
-        food = Food();
+        body = new Body();
+        food = new Food();
         
         body.position.x = snake.tail.oldPosition.x;
         body.position.y = snake.tail.oldPosition.y;
@@ -221,9 +212,8 @@ snake.update = function(){
 };
 
 
-var food = Food();
-food.position.x = canvas.width / 2 + 1;
-food.position.y = canvas.height / 2; 
+var food = new Food();
+
 
 var sprites = [snake, snake.head, topWall, bottomWall, leftWall, rightWall, food];
 var myGame = {};
